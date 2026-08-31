@@ -162,7 +162,7 @@
       <h2 class="mt-4 text-lg font-bold tracking-tight text-slate-900">Aktifkan suara panggilan</h2>
       <p class="mt-2 text-sm leading-relaxed text-slate-500">
         Klik di mana saja pada layar ini agar pengumuman
-        <em class="font-semibold not-italic text-slate-700">"Antrean A-001, silakan menuju ke meja antrean"</em>
+        <em class="font-semibold not-italic text-slate-700">"Perhatian, nomor antrean A-001, dipersilakan menuju ke meja pelayanan. Terima kasih."</em>
         dapat berbunyi (kebijakan autoplay browser).
       </p>
       <span class="mt-4 inline-block text-xs font-bold uppercase tracking-wider text-brand-600">Klik di mana saja</span>
@@ -290,12 +290,39 @@
       o.start(t0); o.stop(t0 + 0.75);
     });
   }
+  /* ====== Suara pramugari: pilih suara paling natural & haluskan ====== */
+  function warmVoices() {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.getVoices(); // pancing browser memuat daftar suara
+    try { speechSynthesis.addEventListener('voiceschanged', function () { speechSynthesis.getVoices(); }); }
+    catch (e) { /* browser lama: abaikan */ }
+  }
+  function pickVoice() {
+    var vs = speechSynthesis.getVoices();
+    if (!vs || !vs.length) return null;
+    var id = vs.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf('id') === 0; });
+    if (!id.length) return null;
+    id.sort(function (a, b) {
+      function score(v) {
+        var n = v.name.toLowerCase();
+        if (n.indexOf('google') === 0) return 5;                       // Google Bahasa Indonesia — natural
+        if (n.indexOf('natural') > -1) return 4;                       // Microsoft Natural
+        if (n.indexOf('gadis') > -1 || n.indexOf('female') > -1) return 3; // suara perempuan klasik
+        if (n.indexOf('online') > -1) return 2;
+        return 1;
+      }
+      return score(b) - score(a);
+    });
+    return id[0];
+  }
   function speak(text) {
     if (!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'id-ID'; u.rate = 0.95; u.pitch = 1;
-    var v = speechSynthesis.getVoices().find(function (v) { return v.lang && v.lang.toLowerCase().indexOf('id') === 0; });
+    u.lang = 'id-ID';
+    u.rate = 0.88;   // pelan & jelas, seperti pengumuman di kabin
+    u.pitch = 1.12;  // sedikit lebih tinggi — kesan suara pramugari
+    var v = pickVoice();
     if (v) u.voice = v;
     speechSynthesis.speak(u);
   }
@@ -304,14 +331,17 @@
     playChime();
     var no = noOf(r);
     var nama = r[F.nama];
-    var text = CFG.announceWithName && nama
-      ? 'Antrean ' + no + ', ' + nama + '. Silakan menuju ke meja antrean.'
-      : 'Antrean ' + no + '. Silakan menuju ke meja antrean.';
+    var text = 'Perhatian. ';
+    if (CFG.announceWithName && nama) {
+      text += 'Nomor antrean ' + no + ', atas nama ' + nama + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
+    } else {
+      text += 'Nomor antrean ' + no + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
+    }
     setTimeout(function () { speak(text); }, 950);
   }
   function testSound() {
     playChime();
-    setTimeout(function () { speak('Antrean A 001. Silakan menuju ke meja antrean.'); }, 950);
+    setTimeout(function () { speak('Perhatian. Nomor antrean A 001, dipersilakan menuju ke meja pelayanan. Terima kasih.'); }, 950);
   }
 
   /* ================= render ================= */
@@ -499,6 +529,7 @@
   }, { once: true });
 
   updateSoundUI();
+  warmVoices();
   init();
 })();
 </script>

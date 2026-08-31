@@ -15,16 +15,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function loadEnv() {
   const env = {};
+  let raw;
   try {
-    const raw = readFileSync(join(__dirname, '.env'), 'utf8');
-    for (const line of raw.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const m = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-      if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
-    }
+    raw = readFileSync(join(__dirname, '.env'), 'utf8');
   } catch (e) {
-    console.error('Gagal membaca .env:', e.message);
+    // File .env tidak ada (misalnya saat build di Vercel) —
+    // nilai diambil dari environment variable proses (process.env).
+    if (e.code !== 'ENOENT') console.warn('Gagal membaca .env:', e.message);
+    return env;
+  }
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const m = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
   }
   return env;
 }
@@ -43,8 +47,12 @@ const missing = [];
 if (!env.SUPABASE_URL || env.SUPABASE_URL.includes('GANTI')) missing.push('SUPABASE_URL');
 if (!env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY.includes('GANTI')) missing.push('SUPABASE_PUBLISHABLE_KEY');
 
-console.log('✅ config.js berhasil dibuat dari .env');
 if (missing.length) {
-  console.warn('⚠️  Masih kosong/placeholder di .env: ' + missing.join(', '));
+  console.error('❌ GAGAL membuat config.js — variabel belum di-set: ' + missing.join(', '));
+  console.error('   Lokal : isi file .env lalu jalankan ulang "node build-config.mjs".');
+  console.error('   Vercel: tambahkan Environment Variables di Project Settings → Environment Variables, lalu Redeploy.');
+  process.exit(1);
 }
+
+console.log('✅ config.js berhasil dibuat');
 console.log('ℹ️  SUPABASE_SECRET_KEY tidak dimasukkan ke config.js (sesuai aturan keamanan).');

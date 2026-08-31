@@ -73,6 +73,28 @@ SQL ini akan:
 - Pada layar TV: buka sekali, **klik di mana saja** untuk mengaktifkan suara
   (kebijakan autoplay browser), lalu jangan dimatikan
 
+## 🌐 Deploy ke Vercel (hosting publik)
+
+`config.js` **tidak** ikut di-push ke GitHub (sengaja, demi keamanan key).
+Supaya website di Vercel tetap bisa berjalan, Vercel perlu membuat `config.js`
+sendiri saat build dari **Environment Variables**. Caranya:
+
+1. Import repo GitHub ini ke Vercel (Vercel Dashboard → **Add New → Project**).
+2. Di **Project Settings → Environment Variables**, tambahkan 3 variabel
+   (nilainya sama dengan di `.env`):
+
+   | Name | Value |
+   |---|---|
+   | `SUPABASE_URL` | `https://pqobeihpxudkxkyowzrz.supabase.co` |
+   | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (dari `.env`) |
+   | `SUPABASE_TABLE_NAME` | `visitors` |
+
+   > ⚠️ `SUPABASE_SECRET_KEY` **tidak perlu** — frontend tidak boleh tahu secret key.
+3. Deploy. File `vercel.json` di repo ini otomatis menjalankan
+   `node build-config.mjs` saat build → `config.js` dibuat dari env vars di atas.
+4. Kalau build gagal dengan pesan "variabel belum di-set", berarti env vars
+   belum lengkap — cek lagi langkah 2, lalu klik **Redeploy**.
+
 ## 🔄 Alur Status
 
 ```

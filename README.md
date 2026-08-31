@@ -7,7 +7,7 @@ terhubung langsung ke Supabase secara **real-time**.
 
 - Menampilkan nomor yang sedang **Dipanggil** (besar) + daftar **Menunggu** + riwayat terakhir dipanggil
 - Update otomatis (real-time) saat web form lain insert data / status berubah
-- Suara pengumuman otomatis: *"Antrean A-001, silakan menuju ke meja antrean"* + nada ding-dong 🔔
+- Suara pengumuman otomatis bergaya **pramugari**: *"Perhatian, nomor antrean A-001, dipersilakan menuju ke meja pelayanan. Terima kasih."* + nada ding-dong 🔔
 - Nomor antrean otomatis `A-001`, `A-002`, … **per hari** (reset tiap hari), **khusus `jenis_kunjungan = 'langsung'`**
 - Status otomatis **`menunggu`** saat data pertama kali diisi dari web form lain
   → **web form yang sudah ada TIDAK perlu diubah sama sekali**
@@ -105,7 +105,7 @@ Web form lain INSERT (langsung)
         │  status diubah jadi "dipanggil"
         ▼
    Layar menampilkan nomor besar + suara:
-   "Antrean A-XXX, silakan menuju ke meja antrean"
+   "Perhatian. Nomor antrean A-XXX, dipersilakan menuju ke meja pelayanan. Terima kasih."
         │  status diubah jadi "selesai"
         ▼
    Pindah ke daftar "Terakhir Dipanggil"

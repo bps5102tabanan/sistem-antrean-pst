@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#173a82"/>
+<title>Sistem Antrean PST — BPS Kabupaten Tabanan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50:'#F0F5FC',100:'#DCE9FA',200:'#C0D7F5',300:'#94BCEE',400:'#6098E3',
+            500:'#3B78D6',600:'#265DC4',700:'#1E4AA0',800:'#173A82',900:'#0F2B61',950:'#0A1D45'
+          }
+        },
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"','Inter','system-ui','-apple-system','sans-serif']
+        }
+      }
+    }
+  };
+</script>
+<style>
+  html,body{height:100%}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  .called-num{font-size:clamp(4.5rem,15vw,11rem);line-height:.92;letter-spacing:-.02em}
+  @keyframes pop{0%{transform:scale(.72) translateY(12px);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes cardFlash{0%{box-shadow:0 0 0 0 rgba(38,93,196,.5)}100%{box-shadow:0 0 0 18px rgba(38,93,196,0)}}
+  .card-flash{animation:cardFlash .9s ease-out}
+  .scroll-mask{position:absolute;left:0;right:0;height:28px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:5}
+  #waitingScroll.scrolling .scroll-mask{opacity:1}
+  .scroll-mask-top{top:0;background:linear-gradient(to bottom,#fff,rgba(255,255,255,0))}
+  .scroll-mask-bottom{bottom:0;background:linear-gradient(to top,#fff,rgba(255,255,255,0))}
+  #waitingScroll::-webkit-scrollbar{width:6px}
+  #waitingScroll::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+  #historyList::-webkit-scrollbar{width:6px}
+  #historyList::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+  #fatal{display:none}
+  #fatal.show{display:grid}
+</style>
+</head>
+<body class="flex h-full flex-col bg-[#EDF1F7] font-sans text-slate-800">
+
+  <!-- aksen atas -->
+  <div class="h-1 shrink-0 bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400"></div>
+
+  <header class="z-20 shrink-0 border-b border-slate-200/80 bg-white/95">
+    <div class="mx-auto flex h-16 w-full max-w-[1500px] flex-wrap items-center gap-x-5 gap-y-2 px-5">
+      <!-- brand -->
+      <div class="flex min-w-0 items-center gap-3">
+        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-sm shadow-brand-900/20">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M5 10.5h3V19H5zM10.5 5.5h3V19h-3zM16 12.5h3V19h-3z"/>
+          </svg>
+        </div>
+        <div class="min-w-0 leading-tight">
+          <h1 class="truncate text-[17px] font-extrabold tracking-tight text-slate-900">Sistem Antrean PST</h1>
+          <p class="truncate text-[11.5px] font-medium text-slate-500">BPS Kabupaten Tabanan · Pelayanan Statistik Terpadu</p>
+        </div>
+      </div>
+
+      <div class="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+        <!-- koneksi -->
+        <div class="flex items-center gap-2 text-[12.5px] font-medium text-slate-500">
+          <span id="connDot" class="h-2 w-2 rounded-full bg-slate-300"></span>
+          <span id="connText" class="whitespace-nowrap">Menghubungkan…</span>
+        </div>
+        <!-- suara -->
+        <button id="btnSound" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[.97]">
+          <svg id="iconSoundOn" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z"/></svg>
+          <svg id="iconSoundOff" viewBox="0 0 24 24" class="hidden h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z"/></svg>
+          <span id="soundLabel">Suara aktif</span>
+        </button>
+        <button id="btnTest" class="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[12.5px] font-semibold text-brand-700 shadow-sm transition hover:bg-brand-100 active:scale-[.97]">
+          <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+          Tes suara
+        </button>
+        <!-- jam -->
+        <div class="text-right leading-tight">
+          <div id="clockTime" class="text-[21px] font-bold tabular-nums tracking-tight text-slate-900">--:--:--</div>
+          <div id="clockDate" class="text-[11px] font-medium text-slate-500">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto grid w-full max-w-[1500px] flex-1 min-h-0 grid-cols-1 gap-5 px-5 py-5 lg:grid-cols-3">
+
+    <!-- ===== KARTU SEDANG DIPANGGIL ===== -->
+    <section class="relative flex min-h-[420px] flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 text-white shadow-xl shadow-brand-900/15 lg:col-span-2 lg:min-h-0">
+      <div class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full border border-white/10"></div>
+      <div class="pointer-events-none absolute -right-36 -top-36 h-96 w-96 rounded-full border border-white/5"></div>
+      <div class="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-white/[.04] blur-2xl"></div>
+
+      <div class="relative z-10 flex items-center justify-between px-6 pt-5">
+        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-brand-200">Sedang Dipanggil</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-amber-200">
+          <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300"></span> Dipanggil
+        </span>
+      </div>
+
+      <div class="relative z-10 flex flex-1 flex-col items-center justify-center px-8 py-4 text-center">
+        <div id="calledNumber" class="called-num font-extrabold tabular-nums text-white drop-shadow-[0_8px_24px_rgba(0,0,0,.25)]">—</div>
+        <div id="calledName" class="mt-3 max-w-full truncate text-[clamp(20px,2.4vw,30px)] font-bold text-white">Belum ada panggilan</div>
+        <div id="calledInstansi" class="mt-1.5 max-w-full truncate text-[clamp(13px,1.3vw,16px)] font-medium text-brand-200">Antrean akan segera dimulai</div>
+      </div>
+
+      <div class="relative z-10 flex items-center gap-3 border-t border-white/10 px-6 py-4">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 text-brand-300" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+        <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-300">Berikutnya</span>
+        <span id="nextNo" class="text-sm font-extrabold tabular-nums text-white">—</span>
+        <span id="nextName" class="min-w-0 flex-1 truncate text-sm font-medium text-brand-100">Tidak ada antrean berikutnya</span>
+      </div>
+    </section>
+
+    <!-- ===== KOLOM KANAN ===== -->
+    <div class="flex min-h-0 flex-col gap-5 lg:h-full">
+
+      <!-- daftar menunggu -->
+      <div id="waitingCard" class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <div class="flex shrink-0 items-center gap-2.5 border-b border-slate-100 px-5 py-4">
+          <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-brand-600" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
+          <h2 class="text-[13px] font-bold tracking-wide text-slate-800">Menunggu</h2>
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Hari ini · WITA</span>
+          <span id="waitingCount" class="ml-auto rounded-full bg-brand-600 px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-white">0</span>
+        </div>
+        <div id="waitingScroll" class="relative min-h-0 flex-1 overflow-hidden max-h-[46vh] lg:max-h-none">
+          <div class="scroll-mask scroll-mask-top"></div>
+          <div class="scroll-mask scroll-mask-bottom"></div>
+          <ul id="waitingList" class="flex flex-col gap-1.5 p-3"></ul>
+        </div>
+      </div>
+
+      <!-- riwayat -->
+      <div class="flex max-h-[38vh] min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm lg:max-h-[30vh]">
+        <div class="flex shrink-0 items-center gap-2.5 border-b border-slate-100 px-5 py-3.5">
+          <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] text-brand-600" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+          <h2 class="text-[13px] font-bold tracking-wide text-slate-800">Terakhir Dipanggil</h2>
+        </div>
+        <ul id="historyList" class="min-h-0 flex-1 overflow-y-auto p-2"></ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="shrink-0 border-t border-slate-200/70 bg-white/70 px-5 py-2 text-center text-[11px] font-medium tracking-wide text-slate-400">
+    Badan Pusat Statistik Kabupaten Tabanan · Pelayanan Statistik Terpadu (PST)
+  </footer>
+
+  <!-- overlay aktifkan suara -->
+  <div id="hint" class="fixed inset-0 z-50 grid cursor-pointer place-items-center bg-slate-900/45 p-6 backdrop-blur-[2px]">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-2xl">
+      <div class="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-50 text-brand-600">
+        <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+      </div>
+      <h2 class="mt-4 text-lg font-bold tracking-tight text-slate-900">Aktifkan suara panggilan</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-500">
+        Klik di mana saja pada layar ini agar pengumuman
+        <em class="font-semibold not-italic text-slate-700">"Antrean A-001, silakan menuju ke meja antrean"</em>
+        dapat berbunyi (kebijakan autoplay browser).
+      </p>
+      <span class="mt-4 inline-block text-xs font-bold uppercase tracking-wider text-brand-600">Klik di mana saja</span>
+    </div>
+  </div>
+
+  <!-- overlay fatal -->
+  <div id="fatal" class="fixed inset-0 z-[60] place-items-center bg-slate-900/70 p-6">
+    <div class="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-8 text-center shadow-2xl">
+      <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-rose-600">
+        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+      </div>
+      <h2 class="mt-3 text-lg font-bold text-slate-900">Terjadi kesalahan</h2>
+      <p id="fatalMsg" class="mt-2 break-words text-sm text-slate-500"></p>
+    </div>
+  </div>
+</body>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var CFG = window.SUPABASE_CONFIG || {};
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  var F = CFG.fields || {};
+  var fallbackNos = {}; // id -> "A-00N" bila kolom no_antrean belum ada di DB
+  function noOf(r) {
+    if (!r) return '—';
+    return r[F.noAntrean] || fallbackNos[r.id] || (r.id != null ? '#' + r.id : '—');
+  }
+  function statusOf(r) {
+    var s = String((r && r[F.status]) || '').toLowerCase();
+    // Data lama tanpa kolom status (SQL setup belum dijalankan) dianggap 'menunggu'
+    return s || 'menunggu';
+  }
+  function isLangsung(r) {
+    return String((r && r[F.jenisKunjungan]) || '').toLowerCase() === String(CFG.jenisLangsung || 'langsung').toLowerCase();
+  }
+  // Tanggal lokal WITA (Asia/Makassar, UTC+8) dalam format YYYY-MM-DD
+  function witaDateKey(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  function todayKey() { return witaDateKey(Date.now()); }
+  // Hanya data yang dibuat/diperbarui pada hari berjalan di sistem
+  function isToday(r) {
+    var ts = r && (r[F.createdAt] || r[F.updatedAt]);
+    if (!ts) return false;
+    return witaDateKey(ts) === todayKey();
+  }
+  // Hitung nomor antrean sementara (A-001, A-002, ...) per hari — dipakai
+  // hanya selama kolom no_antrean belum dibuat di database (SQL setup).
+  // Urut berdasarkan created_at, sama seperti backfill di supabase-setup.sql.
+  function rebuildFallbackNos() {
+    fallbackNos = {};
+    var groups = {};
+    rows.forEach(function (r) {
+      if (!isLangsung(r)) return;
+      var key = witaDateKey(r[F.createdAt] || r[F.updatedAt]);
+      if (!key) return;
+      (groups[key] = groups[key] || []).push(r);
+    });
+    Object.keys(groups).forEach(function (key) {
+      groups[key].sort(function (a, b) {
+        var ta = new Date(a[F.createdAt] || a[F.updatedAt] || 0).getTime();
+        var tb = new Date(b[F.createdAt] || b[F.updatedAt] || 0).getTime();
+        return (ta - tb) || ((a.id || 0) - (b.id || 0));
+      });
+      groups[key].forEach(function (r, i) {
+        fallbackNos[r.id] = 'A-' + String(i + 1).padStart(3, '0');
+      });
+    });
+  }
+  function digits(s) { return parseInt(String(s == null ? '' : s).replace(/\D/g, ''), 10) || 0; }
+  function sortByNo(a, b) {
+    return digits(noOf(a)) - digits(noOf(b)) ||
+      String(noOf(a)).localeCompare(String(noOf(b)), 'en', { numeric: true });
+  }
+  function dedupe(arr) { return Array.from(new Map(arr.map(function (r) { return [r.id, r]; })).values()); }
+  function fmtTime(ts) {
+    if (!ts) return '';
+    try { var d = new Date(ts); if (isNaN(d.getTime())) return ''; return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return ''; }
+  }
+
+  var rows = [];
+  var soundEnabled = true;
+  var audioCtx = null;
+  var lastCalledNo = null;
+  var scrollTimer = null;
+
+  /* ================= jam ================= */
+  function tick() {
+    var n = new Date();
+    $('clockTime').textContent = n.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    $('clockDate').textContent = n.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ================= suara ================= */
+  function ensureCtx() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { /* abaikan */ }
+    return audioCtx;
+  }
+  function playChime() {
+    var ctx = ensureCtx(); if (!ctx) return;
+    var now = ctx.currentTime;
+    [880, 1174.66].forEach(function (f, i) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      var t0 = now + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0 + 0.75);
+    });
+  }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'id-ID'; u.rate = 0.95; u.pitch = 1;
+    var v = speechSynthesis.getVoices().find(function (v) { return v.lang && v.lang.toLowerCase().indexOf('id') === 0; });
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
+  function announce(r) {
+    if (!soundEnabled) return;
+    playChime();
+    var no = noOf(r);
+    var nama = r[F.nama];
+    var text = CFG.announceWithName && nama
+      ? 'Antrean ' + no + ', ' + nama + '. Silakan menuju ke meja antrean.'
+      : 'Antrean ' + no + '. Silakan menuju ke meja antrean.';
+    setTimeout(function () { speak(text); }, 950);
+  }
+  function testSound() {
+    playChime();
+    setTimeout(function () { speak('Antrean A 001. Silakan menuju ke meja antrean.'); }, 950);
+  }
+
+  /* ================= render ================= */
+  function renderAll(flash) {
+    rebuildFallbackNos();
+    // Hanya tampilkan kunjungan langsung yang terjadi pada hari berjalan (WITA)
+    var list = rows.filter(function (r) { return isLangsung(r) && isToday(r); });
+    var waiting = list.filter(function (r) { return statusOf(r) === 'menunggu'; }).sort(sortByNo);
+    var dipanggil = list.filter(function (r) { return statusOf(r) === 'dipanggil'; })
+      .sort(function (a, b) { return new Date(b[F.updatedAt] || 0) - new Date(a[F.updatedAt] || 0); });
+    var selesai = list.filter(function (r) { return statusOf(r) === 'selesai'; })
+      .sort(function (a, b) { return new Date(b[F.updatedAt] || 0) - new Date(a[F.updatedAt] || 0); });
+    renderCalled(dipanggil[0] || null, waiting[0] || null);
+    renderWaiting(waiting, flash);
+    renderHistory(dipanggil.slice(1).concat(selesai).slice(0, 8));
+    $('waitingCount').textContent = waiting.length;
+  }
+  function renderCalled(cur, next) {
+    var num = $('calledNumber'), nm = $('calledName'), inst = $('calledInstansi');
+    if (!cur) {
+      num.textContent = '—'; nm.textContent = 'Belum ada panggilan';
+      inst.textContent = 'Antrean akan segera dimulai';
+      if (next) { $('nextNo').textContent = noOf(next); $('nextName').textContent = next[F.nama] || ''; }
+      else { $('nextNo').textContent = '—'; $('nextName').textContent = 'Tidak ada antrean berikutnya'; }
+      return;
+    }
+    var no = noOf(cur);
+    if (no !== lastCalledNo) {
+      lastCalledNo = no;
+      num.classList.remove('pop'); void num.offsetWidth; num.classList.add('pop');
+    }
+    num.textContent = no;
+    nm.textContent = cur[F.nama] || '';
+    inst.textContent = cur[F.asalInstansi] || '';
+    if (next) { $('nextNo').textContent = noOf(next); $('nextName').textContent = next[F.nama] || ''; }
+    else { $('nextNo').textContent = '—'; $('nextName').textContent = 'Tidak ada antrean berikutnya'; }
+  }
+  function renderWaiting(waiting, flash) {
+    var el = $('waitingList');
+    if (!waiting.length) {
+      el.innerHTML = '<li class="flex items-center justify-center gap-2 px-4 py-10 text-sm font-medium text-slate-400">' +
+        '<svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>' +
+        'Tidak ada yang menunggu</li>';
+    } else {
+      el.innerHTML = waiting.map(function (r, i) {
+        var first = i === 0;
+        return '<li class="flex items-center gap-3 rounded-lg border px-3 py-2.5 ' +
+          (first ? 'border-brand-200 bg-brand-50/70' : 'border-slate-200/70 bg-white') + '">' +
+          '<span class="w-16 shrink-0 rounded-md py-1 text-center text-[13px] font-bold tabular-nums ' +
+          (first ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700') + '">' + esc(noOf(r)) + '</span>' +
+          '<span class="truncate text-[15px] font-medium ' + (first ? 'text-brand-900' : 'text-slate-800') + '">' + esc(r[F.nama] || '') + '</span>' +
+          (first ? '<span class="ml-auto shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">Berikutnya</span>' : '') +
+          '</li>';
+      }).join('');
+    }
+    $('waitingCount').textContent = waiting.length;
+    setupScroll();
+    if (flash) {
+      var card = $('waitingCard');
+      card.classList.remove('card-flash'); void card.offsetWidth; card.classList.add('card-flash');
+    }
+  }
+  function renderHistory(items) {
+    var el = $('historyList');
+    el.innerHTML = items.length ? items.map(function (r) {
+      var t = fmtTime(r[F.updatedAt]);
+      return '<li class="flex items-center gap-3 rounded-lg px-3 py-2">' +
+        '<span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-600">' +
+        '<svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.75 6 6 9-13.5"/></svg></span>' +
+        '<span class="w-14 shrink-0 text-sm font-bold tabular-nums text-brand-600">' + esc(noOf(r)) + '</span>' +
+        '<span class="truncate text-sm text-slate-600">' + esc(r[F.nama] || '') + '</span>' +
+        (t ? '<span class="ml-auto shrink-0 text-xs tabular-nums text-slate-400">' + t + '</span>' : '') +
+        '</li>';
+    }).join('') : '<li class="px-4 py-8 text-center text-sm font-medium text-slate-400">Belum ada panggilan tercatat</li>';
+  }
+
+  /* ================= scroll otomatis daftar menunggu ================= */
+  function setupScroll() {
+    if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+    var el = $('waitingScroll'), ul = $('waitingList');
+    if (!el || !ul) return;
+    var over = ul.scrollHeight > el.clientHeight + 2;
+    el.classList.toggle('scrolling', over);
+    if (!over) return;
+    scrollTimer = setInterval(function () {
+      if (ul.scrollHeight <= el.clientHeight + 2) { clearInterval(scrollTimer); scrollTimer = null; el.classList.remove('scrolling'); return; }
+      el.scrollTop += 0.4;
+      if (el.scrollTop + el.clientHeight >= ul.scrollHeight - 1) el.scrollTop = 0;
+    }, 33);
+  }
+
+  /* ================= supabase ================= */
+  function showFatal(msg) {
+    $('fatalMsg').textContent = msg;
+    $('fatal').classList.add('show');
+  }
+  function setConn(kind, text) {
+    $('connDot').className = 'h-2 w-2 rounded-full ' +
+      (kind === 'ok' ? 'bg-emerald-500' : kind === 'warn' ? 'bg-amber-400' : 'bg-rose-400');
+    $('connText').textContent = text;
+  }
+  function validate() {
+    var u = CFG.url || '', k = CFG.anonKey || '';
+    if (!u || !k || u.indexOf('GANTI') !== -1 || k.indexOf('GANTI') !== -1) {
+      return 'Konfigurasi belum lengkap: isi SUPABASE_URL & SUPABASE_PUBLISHABLE_KEY di file .env, lalu jalankan "node build-config.mjs".';
+    }
+    if (!F.status || !F.noAntrean || !F.jenisKunjungan || !CFG.tableName) {
+      return 'Nama kolom / tabel di config.js belum lengkap.';
+    }
+    return null;
+  }
+  function init() {
+    var err = validate();
+    if (err) { console.warn(err); setConn('warn', 'Belum terhubung'); $('connText').title = err; return; }
+    if (!window.supabase) { setConn('err', 'Library gagal dimuat'); return; }
+
+    var sb;
+    try {
+      sb = window.supabase.createClient(CFG.url, CFG.anonKey);
+    } catch (e) {
+      console.error(e);
+      setConn('err', 'Gagal inisialisasi');
+      showFatal(e.message);
+      return;
+    }
+
+    sb.from(CFG.tableName).select('*').order(F.updatedAt, { ascending: false }).limit(100)
+      .then(function (res) {
+        if (res.error) throw new Error('Gagal ambil data: ' + res.error.message);
+        rows = (res.data || []).map(function (r) { return Object.assign({}, r); });
+        renderAll(false);
+      })
+      .catch(function (e) { console.error(e); showFatal(e.message); });
+
+    var ch = sb.channel('antrean-display');
+    ch
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: CFG.tableName }, function (p) {
+        if (p.new && isLangsung(p.new)) {
+          rows = dedupe([p.new].concat(rows));
+          renderAll(true);
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: CFG.tableName }, function (p) {
+        if (!p.new) return;
+        var oldS = statusOf(p.old), newS = statusOf(p.new);
+        var existed = rows.some(function (r) { return r.id === p.new.id; });
+        rows = dedupe(rows.map(function (r) { return r.id === p.new.id ? Object.assign({}, r, p.new) : r; }));
+        if (!existed && isLangsung(p.new)) rows.unshift(p.new);
+        renderAll(false);
+        if (isLangsung(p.new) && newS === 'dipanggil' && oldS !== 'dipanggil') announce(p.new);
+      })
+      .subscribe(function (status) {
+        if (status === 'SUBSCRIBED') setConn('ok', 'Tersambung real-time');
+        else setConn('err', 'Terputus — muat ulang');
+      });
+  }
+
+  /* ================= UI ================= */
+  function updateSoundUI() {
+    $('iconSoundOn').classList.toggle('hidden', !soundEnabled);
+    $('iconSoundOff').classList.toggle('hidden', soundEnabled);
+    $('soundLabel').textContent = soundEnabled ? 'Suara aktif' : 'Suara mati';
+    var btn = $('btnSound');
+    btn.classList.toggle('text-rose-600', !soundEnabled);
+    btn.classList.toggle('border-rose-200', !soundEnabled);
+    btn.classList.toggle('text-slate-700', soundEnabled);
+    btn.classList.toggle('border-slate-200', soundEnabled);
+  }
+  $('btnSound').addEventListener('click', function () {
+    soundEnabled = !soundEnabled;
+    if (soundEnabled) { ensureCtx(); if ('speechSynthesis' in window) speechSynthesis.resume(); }
+    updateSoundUI();
+  });
+  $('btnTest').addEventListener('click', testSound);
+  var ws = $('waitingScroll');
+  if (ws) {
+    ws.addEventListener('mouseenter', function () { if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; } });
+    ws.addEventListener('mouseleave', setupScroll);
+  }
+  window.addEventListener('pointerdown', function () {
+    ensureCtx();
+    var h = $('hint');
+    if (h && !h.classList.contains('hidden')) h.classList.add('hidden');
+    if ('speechSynthesis' in window) speechSynthesis.resume();
+  }, { once: true });
+
+  updateSoundUI();
+  init();
+})();
+</script>
+</body>
+</html>

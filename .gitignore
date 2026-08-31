@@ -1,0 +1,11 @@
+# File berisi kredensial — JANGAN pernah di-commit ke git!
+.env
+.env.local
+
+# config.js dibuat otomatis dari .env (lihat build-config.mjs)
+config.js
+
+# Umum
+node_modules/
+*.log
+.DS_Store

@@ -1,0 +1,100 @@
+# 🖥️ Layar Display Sistem Antrean Kunjungan
+
+One-page display (untuk TV/layar lobi) sistem antrean kunjungan **langsung**,
+terhubung langsung ke Supabase secara **real-time**.
+
+## ✨ Fitur
+
+- Menampilkan nomor yang sedang **Dipanggil** (besar) + daftar **Menunggu** + riwayat terakhir dipanggil
+- Update otomatis (real-time) saat web form lain insert data / status berubah
+- Suara pengumuman otomatis: *"Antrean A-001, silakan menuju ke meja antrean"* + nada ding-dong 🔔
+- Nomor antrean otomatis `A-001`, `A-002`, … **per hari** (reset tiap hari), **khusus `jenis_kunjungan = 'langsung'`**
+- Status otomatis **`menunggu`** saat data pertama kali diisi dari web form lain
+  → **web form yang sudah ada TIDAK perlu diubah sama sekali**
+- Tombol mute 🔊 dan tombol tes suara
+
+## 📦 Isi Folder
+
+| File | Fungsi |
+|---|---|
+| `index.html` | Layar display (buka ini) |
+| `.env` | **Semua key Supabase** (URL, publishable key, secret key) — file ini diabaikan git |
+| `build-config.mjs` | Script pembuat `config.js` dari `.env` → jalankan `node build-config.mjs` |
+| `config.js` | Dibuat otomatis dari `.env` — **jangan diedit manual** |
+| `config.template.js` | Template untuk script pembuat config |
+| `supabase-setup.sql` | SQL yang dijalankan sekali di Supabase |
+| `.gitignore` | Memastikan `.env` & `config.js` tidak pernah masuk git |
+| `README.md` | Panduan ini |
+
+## 🔐 Soal Key
+
+- **Publishable key** (`sb_publishable_...`) — aman dipakai di frontend, tugasnya memang untuk browser.
+- **Secret key** (`sb_secret_...`) — **HANYA untuk server/backend**. Jangan pernah
+  memasukkannya ke kode yang berjalan di browser, dan script pembuat config
+  (`build-config.mjs`) memang sengaja mengabaikannya.
+
+## 🚀 Cara Pasang
+
+### 1. Isi `.env`
+
+Buka file `.env`, isi `SUPABASE_URL` dengan Project URL kamu
+(Supabase → **Settings (⚙️)** → **API** → *Project URL*).
+
+Lalu jalankan di terminal (dari folder ini):
+
+```sh
+node build-config.mjs
+```
+
+Script ini membaca `.env` → menghasilkan `config.js` (tanpa secret key).
+Setiap kali ganti isi `.env`, jalankan ulang script ini.
+
+### 2. Jalankan SQL di Supabase (sekali saja)
+
+1. Buka [Supabase](https://supabase.com) → project kamu → **SQL Editor** → **New query**
+2. Salin isi `supabase-setup.sql`, lalu **Run**
+   (file ini sudah disesuaikan dengan tabel `visitors` project kamu)
+
+SQL ini akan:
+- menambah kolom `status` (default `menunggu`) & `no_antrean`
+- membuat **trigger**: setiap INSERT dengan `jenis_kunjungan = 'langsung'`
+  otomatis diisi nomor antrean per hari + status `menunggu`
+- memberi nomor untuk **data lama** (backfill per hari)
+- mengaktifkan **Realtime** supaya layar ikut update otomatis
+- membuat policy baca publik (hanya jika RLS aktif)
+
+> ⏰ Hitungan "per hari" memakai zona **WITA (Asia/Makassar)** karena lokasi Bali.
+> Kalau beda lokasi, ubah di `supabase-setup.sql`: `Asia/Jakarta` (WIB) atau `Asia/Jayapura` (WIT).
+
+### 3. Buka / pasang di layar
+
+- Buka `index.html` langsung (double-click), **atau**
+- lebih baik pakai *Live Server* (VS Code) / hosting statis seperti Netlify, Vercel, GitHub Pages
+- Pada layar TV: buka sekali, **klik di mana saja** untuk mengaktifkan suara
+  (kebijakan autoplay browser), lalu jangan dimatikan
+
+## 🔄 Alur Status
+
+```
+Web form lain INSERT (langsung)
+        │  (otomatis oleh trigger)
+        ▼
+   status = menunggu  +  no_antrean = A-XXX (per hari)
+        │  status diubah jadi "dipanggil"
+        ▼
+   Layar menampilkan nomor besar + suara:
+   "Antrean A-XXX, silakan menuju ke meja antrean"
+        │  status diubah jadi "selesai"
+        ▼
+   Pindah ke daftar "Terakhir Dipanggil"
+```
+
+Status diubah dari mana? Dari **Supabase Dashboard** (tabel → edit baris),
+atau tombol operator / script lain yang meng-update kolom `status`
+(contoh: `update visitors set status = 'dipanggil' where id = ...`).
+
+## ⚠️ Catatan
+
+- Layar hanya menampilkan `jenis_kunjungan = 'langsung'`
+- Kalau data lama belum punya nomor/status, jalankan ulang bagian 4–5 di SQL
+- Nomor antrean dihitung sederhana (`count + 1`); untuk pemakaian sehari-hari kantor sudah cukup

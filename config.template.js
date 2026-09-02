@@ -35,7 +35,8 @@ window.SUPABASE_CONFIG = {
   jenisLangsung: "langsung",
 
   // true  -> pengumuman suara menyebut nama, contoh:
-  //          "Antrean A-001, Naufal Abdul Rafi Zaqi. Silakan menuju ke meja antrean."
+  //          "Nomor antrean A 001, atas nama Naufal Abdul Rafi Zaqi,
+  //           dipersilakan menuju ke meja pelayanan. Terima kasih."
   // false -> hanya nomor antrean yang disebut
-  announceWithName: false
+  announceWithName: true
 };

@@ -330,12 +330,14 @@
     if (!soundEnabled) return;
     playChime();
     var no = noOf(r);
-    var nama = r[F.nama];
+    var nama = String(r[F.nama] || '').trim();
+    // Nomor dibaca pakai spasi ("A 001") supaya TTS tidak membaca tanda "-"
+    var noUcapan = String(no).replace(/[-–—]/g, ' ');
     var text = 'Perhatian. ';
     if (CFG.announceWithName && nama) {
-      text += 'Nomor antrean ' + no + ', atas nama ' + nama + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
+      text += 'Nomor antrean ' + noUcapan + ', atas nama ' + nama + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
     } else {
-      text += 'Nomor antrean ' + no + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
+      text += 'Nomor antrean ' + noUcapan + ', dipersilakan menuju ke meja pelayanan. Terima kasih.';
     }
     setTimeout(function () { speak(text); }, 950);
   }
